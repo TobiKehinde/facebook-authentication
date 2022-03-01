@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Facebook Auth</title>
+  <link rel="stylesheet" href="https://bootswatch.com/5/darkly/bootstrap.min.css">
+  <style media="screen">
+    #profile,
+    #logout,
+    #feed {
+      display: none
+    }
+  </style>
+</head>
+
+<body>
+
+  <script>
+
+    window.fbAsyncInit = function () {
+      FB.init({
+        appId: process.env.APP_ID,
+        cookie: true,
+        xfbml: true,
+        version: 'v12.0'
+      });
+
+
+      FB.getLoginStatus(function (response) {
+        statusChangeCallback(response);
+      });
+
+    };
+
+    (function (d, s, id) {
+      var js, fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) { return; }
+      js = d.createElement(s); js.id = id;
+      js.src = "https://connect.facebook.net/en_US/sdk.js";
+      fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+
+    function statusChangeCallback(response) {
+      if (response.status === 'connected') {
+        console.log('Logged in and authenticated');
+        setElements(true);
+        testAPI();
+      } else {
+        console.log('Not authenticated');
+        setElements(false);
+      }
+    }
+
+
+    function checkLoginState() {
+      FB.getLoginStatus(function (response) {
+        statusChangeCallback(response);
+      });
+    }
+
+    function testAPI() {
+      FB.api('/me',
+        'GET',
+        { "fields": "id,name,email,gender,location" },
+        function (response) {
+          if (response && !response.error) {
+            //console.log(response);
+            buildProfile(response);
+          }
+
+          FB.api('/me',
+            'GET',
+            { "fields": "feed" },
+            function (response) {
+              if (response && !response.error) {
+                //console.log(response);
+                buildFeed(response);
+              }
+            });
+        })
+    }
+
+    function buildProfile(user) {
+      let profile = `
+          <h3 class="card-header">Hello ${user.name}</h3>
+          <div class="card-body text-white bg-primary mb-3">
+            <ul>
+            <li>User ID: ${user.id}</li>
+            <li>Email: ${user.email}</li>
+            <li>Gender: ${user.gender}</li><li>Location: ${user.location}</li>
+          </ul>
+          </div>
+        `;
+
+      document.getElementById('profile').innerHTML = profile;
+    }
+
+    function buildFeed(feed) {
+      let output = '<h3>Latest Posts</h3>';
+      for (let i in feed.data) {
+        if (feed.data[i].message) {
+          output += `
+              <div class="list-group-item list-group-item-action flex-column align-items-start mb-1">
+                ${feed.data[i].message} <span class="text-muted">${feed.data[i].created_time}</span>
+              </div>
+            `;
+        }
+      }
+
+      document.getElementById('feed').innerHTML = output;
+    }
+
+    function setElements(isLoggedIn) {
+      if (isLoggedIn) {
+        document.getElementById('logout').style.display = 'block';
+        document.getElementById('fb-btn').style.display = 'none';
+        document.getElementById('heading').style.display = 'none';
+        document.getElementById('profile').style.display = 'block';
+        document.getElementById('feed').style.display = 'block';
+      } else {
+        document.getElementById('logout').style.display = 'none';
+        document.getElementById('fb-btn').style.display = 'block';
+        document.getElementById('heading').style.display = 'block';
+        document.getElementById('profile').style.display = 'none';
+        document.getElementById('feed').style.display = 'none';
+      }
+    }
+
+    function logout() {
+      FB.logout(function (response) {
+        setElements(false);
+      });
+    }
+  </script>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">FacebookAuth</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText"
+        aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+      </button>
+      <div class="collapse navbar-collapse" id="navbarText">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a class="nav-link active" aria-current="page" href="index.html">Home</a>
+          </li>
+
+        </ul>
+        <span class="navbar-text">
+          <a id="logout" href="#" onclick="logout()">Logout</a>
+          <fb:login-button id="fb-btn" scope="public_profile,email" onlogin="checkLoginState();">
+          </fb:login-button>
+        </span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="card-header">
+    <h3 id="heading" class="card-title">Log in to view your Facebook feed</h3>
+    <div id="profile" class="card text-white bg-primary mb-3"></div>
+    <div id="feed" class="card text-white bg-info mb-3"></div>
+  </div>
+
+</body>
+
+</html>
